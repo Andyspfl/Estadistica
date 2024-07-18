@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Datos</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+            margin-top: 20px;
+        }
+        .container {
+            max-width: 900px;
+        }
+        .result-container {
+            margin-top: 30px;
+        }
+        .card {
+            margin-bottom: 20px;
+        }
+        .card-body img {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Análisis de Datos</h1>
+        <div class="card">
+            <div class="card-body">
+                <form id="data-form">
+                    <div class="form-group">
+                        <label for="vecx">Valores de X (separados por espacios):</label>
+                        <input type="text" class="form-control" id="vecx" name="vecx" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="vecy">Valores de Y (separados por espacios):</label>
+                        <input type="text" class="form-control" id="vecy" name="vecy" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="x_input">Valor de X para calcular Y:</label>
+                        <input type="number" class="form-control" id="x_input" name="x_input" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">Procesar</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="result-container">
+            <h2 class="text-center">Resultados</h2>
+            <div id="resultados"></div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function(){
+            $('#data-form').on('submit', function(event){
+                event.preventDefault();
+                $.ajax({
+                    url: '/process',
+                    method: 'POST',
+                    data: $(this).serialize(),
+                    success: function(response){
+                        if (typeof response === 'string') {
+                            $('#resultados').html('<div class="alert alert-danger">' + response + '</div>');
+                        } else {
+                            let html = '';
+
+                            html += crearTablaMatriz('Matriz de Frecuencias Absolutas', response.matrizF);
+                            html += crearTablaMatriz('Matriz de Frecuencias Relativas', response.matrizFR);
+                            html += crearTablaMedidas('Medidas de Centralidad y Dispersión (Variable X)', response.medidas_x);
+                            html += crearTablaMedidas('Medidas de Centralidad y Dispersión (Variable Y)', response.medidas_y);
+
+                            html += '<div class="card"><div class="card-body">';
+                            html += '<h3 class="card-title">Covarianza</h3>';
+                            html += '<p>' + response.covarianza + '</p>';
+                            html += '</div></div>';
+
+                            html += '<div class="card"><div class="card-body">';
+                            html += '<h3 class="card-title">Recta de Regresión</h3>';
+                            html += '<p>Y = ' + response.recta_regresion.a.toFixed(2) + ' + ' + response.recta_regresion.b.toFixed(2) + ' * X</p>';
+                            html += '</div></div>';
+
+                            html += '<div class="card"><div class="card-body">';
+                            html += '<h3 class="card-title">Valor de Y para X = ' + response.x_input + '</h3>';
+                            html += '<p>' + response.y_output + '</p>';
+                            html += '</div></div>';
+
+                            html += '<div class="card"><div class="card-body">';
+                            html += '<h3 class="card-title">Gráfica de la Recta de Regresión</h3>';
+                            html += '<img src="' + response.img_regresion + '" class="img-fluid"/>';
+                            html += '</div></div>';
+
+                            html += '<div class="card"><div class="card-body">';
+                            html += '<h3 class="card-title">Gráfica 3D de Frecuencias Absolutas</h3>';
+                            html += '<img src="' + response.img_3d_abs + '" class="img-fluid"/>';
+                            html += '</div></div>';
+
+                            html += '<div class="card"><div class="card-body">';
+                            html += '<h3 class="card-title">Gráfica 3D de Frecuencias Relativas</h3>';
+                            html += '<img src="' + response.img_3d_rel + '" class="img-fluid"/>';
+                            html += '</div></div>';
+
+                            $('#resultados').html(html);
+                        }
+                    }
+                });
+            });
+        });
+
+        function crearTablaMatriz(titulo, matriz) {
+            let html = '<div class="card"><div class="card-body">';
+            html += '<h3 class="card-title">' + titulo + '</h3>';
+            html += '<table class="table table-striped table-bordered"><thead><tr>';
+            
+            // Crear cabeceras
+            for (let i = 0; i <= matriz[0].length; i++) {
+                if (i === 0) {
+                    html += '<th></th>';
+                } else {
+                    html += '<th>y' + i + '</th>';
+                }
+            }
+            html += '</tr></thead><tbody>';
+
+            // Crear filas
+            for (let i = 0; i < matriz.length; i++) {
+                html += '<tr>';
+                html += '<th>x' + (i + 1) + '</th>';
+                for (let j = 0; j < matriz[i].length; j++) {
+                    html += '<td>' + matriz[i][j].toFixed(2) + '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            html += '</div></div>';
+            return html;
+        }
+
+        function crearTablaMedidas(titulo, medidas) {
+            let html = '<div class="card"><div class="card-body">';
+            html += '<h3 class="card-title">' + titulo + '</h3>';
+            html += '<table class="table table-striped table-bordered"><thead><tr>';
+            html += '<th>Medida</th><th>Valor</th>';
+            html += '</tr></thead><tbody>';
+
+            for (let medida in medidas) {
+                html += '<tr>';
+                html += '<td>' + medida + '</td>';
+                html += '<td>' + medidas[medida].toFixed(2) + '</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            html += '</div></div>';
+            return html;
+        }
+    </script>
+</body>
+</html>

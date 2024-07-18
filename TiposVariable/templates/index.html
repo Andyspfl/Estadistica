@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mt-4">
+    <h2>Analizador de Datos</h2>
+    <form method="post">
+        <div class="form-group">
+            <label for="datos">Ingrese los datos separados por espacios:</label>
+            <input type="text" class="form-control" id="datos" name="datos" required>
+        </div>
+        <div class="form-group">
+            <label for="tipo_variable">Seleccione el tipo de variable:</label>
+            <select class="form-control" id="tipo_variable" name="tipo_variable">
+                <option value="Cualitativa">Cualitativa</option>
+                <option value="Cuantitativa discreta">Cuantitativa discreta</option>
+                <option value="Cuantitativa continua">Cuantitativa continua</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Analizar</button>
+    </form>
+</div>
+{% endblock %}
